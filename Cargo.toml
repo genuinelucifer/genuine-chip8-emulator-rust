@@ -1,0 +1,7 @@
+[package]
+name = "genuine-chip8-emulator-rust"
+version = "0.1.0"
+authors = ["Kumar Ravi <kumar_ra@worksap.co.jp>"]
+edition = "2018"
+
+[dependencies]
