@@ -1,8 +1,17 @@
-struct Chip8Display {
+pub struct Chip8Display {
     pixels: [[bool; 64]; 32]
 }
 
 impl Chip8Display {
+
+    pub fn new() -> Chip8Display {
+        Chip8Display {
+            pixels: [[false; 64];32]
+        }
+    }
+
+
+    // TODO:: fix it reset pixels
     pub fn disp_clear(&mut self) -> bool {
         // clear the display, return true if any on pixel was switched to off
         let mut collision = false;

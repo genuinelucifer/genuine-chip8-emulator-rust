@@ -1,5 +1,6 @@
 use super::memory;
 use super::timer;
+use super::display;
 
 pub struct Chip8CPU {
     V: [u8; 16],
@@ -10,6 +11,7 @@ pub struct Chip8CPU {
     SP: u8,                     // Current position of calls in stack
     delay_timer: timer::Chip8Timer,
     sound_timer: timer::Chip8Timer,
+    display: display::Chip8Display,
 }
 
 impl Chip8CPU {
@@ -22,7 +24,8 @@ impl Chip8CPU {
             stack: [0; 24],
             SP: 0,
             delay_timer: timer::Chip8Timer::new(),
-            sound_timer: timer::Chip8Timer::new()
+            sound_timer: timer::Chip8Timer::new(),
+            display: display::Chip8Display::new()
         }
     }
 
@@ -41,6 +44,69 @@ impl Chip8CPU {
             std::process::exit(0);
         }
         // TODO: Handle all other op codes here
+        let opcode = (byte0 as u16)<<8 | (byte1 as u16);
+        match opcode & 0xF000 {
+            0x0000 => {
+                match opcode {
+                    0x00E0 => {
+                        //clear screen
+                        self.display.disp_clear();
+                    },
+                    0x00EE => {
+                        //return from subroutine
+                        self.PC = self.stack[self.SP as usize];
+                        self.SP -= 1;
+                    },
+                    _ => {
+                        //do nothing
+                    }
+                }
+            },
+            0x1000 => {
+                // address jump
+                self.PC = opcode & 0x0FFF;
+            },
+            0x2000 => {
+                // call subroutine
+                self.SP += 1;
+                self.stack[self.SP as usize] = self.PC;
+                self.PC = opcode & 0x0FFF;
+            },
+            0x3000 => {
+                // Skip next instruction if Vx = kk <-(3xkk)
+                if self.V[((opcode & 0x0F00)>>2) as usize] == (opcode & 0x00FF) as u8 {
+                    self.PC += 2;
+                }
+            },
+            0x4000 => {
+                // Skip next instruction if Vx != kk <-(4xkk)
+                if self.V[((opcode & 0x0F00)>>2) as usize] != (opcode & 0x00FF) as u8 {
+                    self.PC += 2;
+                }
+            },
+            0x5000 => {
+                // Skip next instruction if Vx = Vy <-(5xy0)
+                if self.V[((opcode & 0x0F00)>>2) as usize] == self.V[((opcode & 0x00F0)>>1) as usize] {
+                    self.PC += 2;
+                }
+            },
+            0x6000 => {
+                // 6xkk - LD Vx, byte
+                // Set Vx = kk.
+                self.V[((opcode & 0x0F00)>>2) as usize] = (opcode & 0x00FF) as u8;
+            },
+            0x7000 => {
+                // 7xkk - ADD Vx, byte
+                // Set Vx = Vx + kk.
+                self.V[((opcode & 0x0F00)>>2) as usize] += (opcode & 0x00FF) as u8
+            }
+
+            _ => {
+                // do nothing
+                // unsupported opcode
+            }
+
+        }
     }
 }
 
