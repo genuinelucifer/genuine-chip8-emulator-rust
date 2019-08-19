@@ -35,10 +35,7 @@ fn start() -> Result<(), std::io::Error> {
     })
 }
 
-fn main() {
+fn main() -> Result<(), std::io::Error> {
     println!("Chip-8 Emulator in Rust");
-    match start() {
-        Ok(_e) => {},
-        Err(e) => println!("{:?}", e)
-    }
+    start()
 }
