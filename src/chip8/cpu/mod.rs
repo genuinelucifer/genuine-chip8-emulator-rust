@@ -74,31 +74,31 @@ impl Chip8CPU {
             },
             0x3000 => {
                 // Skip next instruction if Vx = kk <-(3xkk)
-                if self.V[((opcode & 0x0F00)>>2) as usize] == (opcode & 0x00FF) as u8 {
+                if self.V[((opcode & 0x0F00)>>8) as usize] == (opcode & 0x00FF) as u8 {
                     self.PC += 2;
                 }
             },
             0x4000 => {
                 // Skip next instruction if Vx != kk <-(4xkk)
-                if self.V[((opcode & 0x0F00)>>2) as usize] != (opcode & 0x00FF) as u8 {
+                if self.V[((opcode & 0x0F00)>>8) as usize] != (opcode & 0x00FF) as u8 {
                     self.PC += 2;
                 }
             },
             0x5000 => {
                 // Skip next instruction if Vx = Vy <-(5xy0)
-                if self.V[((opcode & 0x0F00)>>2) as usize] == self.V[((opcode & 0x00F0)>>1) as usize] {
+                if self.V[((opcode & 0x0F00)>>8) as usize] == self.V[((opcode & 0x00F0)>>4) as usize] {
                     self.PC += 2;
                 }
             },
             0x6000 => {
                 // 6xkk - LD Vx, byte
                 // Set Vx = kk.
-                self.V[((opcode & 0x0F00)>>2) as usize] = (opcode & 0x00FF) as u8;
+                self.V[((opcode & 0x0F00)>>8) as usize] = (opcode & 0x00FF) as u8;
             },
             0x7000 => {
                 // 7xkk - ADD Vx, byte
                 // Set Vx = Vx + kk.
-                self.V[((opcode & 0x0F00)>>2) as usize] += (opcode & 0x00FF) as u8
+                self.V[((opcode & 0x0F00)>>8) as usize] += (opcode & 0x00FF) as u8
             }
 
             _ => {
