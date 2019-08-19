@@ -1,8 +1,8 @@
 [package]
 name = "genuine-chip8-emulator-rust"
 version = "0.1.0"
-authors = ["Kumar Ravi <kumar_ra@worksap.co.jp>"]
-edition = "2018"
+authors = ["Kumar Ravi <rdahiya0213@gmail.com>", "Abhinav Tripathi <genuineabhinav@gmail.com>"]
+edition = "2019"
 
 [dependencies]
 byteorder = "1.3.2"
