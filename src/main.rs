@@ -1,4 +1,5 @@
 mod loader;
+mod chip8;
 
 use std::io::stdin;
 
@@ -19,10 +20,24 @@ fn start() -> Result<(), std::io::Error> {
             let mut line = String::new();
             let _ = stdin().read_line(&mut line).and_then(|_x|
                 match line.trim().parse::<usize>(){
-                    Ok(line) => {
+                    Ok(line)  => {
+                        // TODO:: add line>0 && line<rom_list.len()
                         println!("Ok {}", line);
                         println!("{:?}",&roms_with_index[line].1.path().to_str());
-                        println!("{:?}", loader::load_roms(&roms_with_index[line].1.path().to_str()));
+                        let rom_data = loader::load_roms(&roms_with_index[line-1].1.path().to_str());
+                        match rom_data {
+                            Ok(v) => {
+                                let mut chip8_cpu = chip8::cpu::Chip8CPU::new();
+                                chip8_cpu.load_program(&v);
+                                println!("{:?}", v);
+                                loop {
+                                    chip8_cpu.exec_next_instruction();
+                                }
+                            },
+                            Err(e) => {
+                                println!("Error occurred while loading rom!");
+                            }
+                        }
                         Ok(())
                     },
                     Err(e) => {
