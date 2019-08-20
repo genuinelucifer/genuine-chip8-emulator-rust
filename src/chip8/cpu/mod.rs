@@ -48,6 +48,8 @@ impl Chip8CPU {
             std::process::exit(0);
         }
         let opcode = (byte0 as u16)<<8 | (byte1 as u16);
+        let x = ((opcode & 0x0F00) >> 8) as usize;
+        let y = ((opcode & 0x00F0) >> 4) as usize;
         match opcode & 0xF000 {
             0x0000 => {
                 match opcode {
@@ -77,36 +79,35 @@ impl Chip8CPU {
             },
             0x3000 => {
                 // Skip next instruction if Vx = kk <-(3xkk)
-                if self.V[((opcode & 0x0F00)>>8) as usize] == (opcode & 0x00FF) as u8 {
+                if self.V[x] == (opcode & 0x00FF) as u8 {
                     self.PC += 2;
                 }
             },
             0x4000 => {
                 // Skip next instruction if Vx != kk <-(4xkk)
-                if self.V[((opcode & 0x0F00)>>8) as usize] != (opcode & 0x00FF) as u8 {
+                if self.V[x] != (opcode & 0x00FF) as u8 {
                     self.PC += 2;
                 }
             },
             0x5000 => {
                 // Skip next instruction if Vx = Vy <-(5xy0)
-                if self.V[((opcode & 0x0F00)>>8) as usize] == self.V[((opcode & 0x00F0)>>4) as usize] {
+                if self.V[x] == self.V[y] {
                     self.PC += 2;
                 }
             },
             0x6000 => {
                 // 6xkk - LD Vx, byte
                 // Set Vx = kk.
-                self.V[((opcode & 0x0F00)>>8) as usize] = (opcode & 0x00FF) as u8;
+                self.V[x] = (opcode & 0x00FF) as u8;
             },
             0x7000 => {
                 // 7xkk - ADD Vx, byte
                 // Set Vx = Vx + kk.
-                self.V[((opcode & 0x0F00)>>8) as usize] += (opcode & 0x00FF) as u8
+                self.V[x] += (opcode & 0x00FF) as u8
             },
             0x8000 => {
                 // 8XYZ
-                let x = ((opcode & 0x0F00) >> 8) as usize;
-                let y = ((opcode & 0x00F0) >> 4) as usize;
+
                 match opcode & 0x000F {
                     0x0000 => {
                         //8XY0 	Assign 	Vx=Vy 	Sets VX to the value of VY.
@@ -175,8 +176,6 @@ impl Chip8CPU {
             0x9000 => {
                 if (opcode & 0x000F) == 0 {
                     //9XY0 	Cond 	if(Vx!=Vy) 	Skips the next instruction if VX doesn't equal VY. (Usually the next instruction is a jump to skip a code block)
-                    let x = ((opcode & 0x0F00) >> 8) as usize;
-                    let y = ((opcode & 0x00F0) >> 4) as usize;
                     if self.V[x] != self.V[y] {
                         self.PC += 2;
                     }
@@ -202,6 +201,20 @@ impl Chip8CPU {
                 let rand_u8: u8 = rng.gen();
                 self.V[x] = rand_u8 &  NN;
             },
+            0xD000 => {
+                //Dxyn - DRW Vx, Vy, nibble
+                //Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
+                let n = opcode & 0x000F;
+                let row = self.V[x];
+                let column = self.V[y];
+                self.V[0xF] = 0;
+                for i in 0..n {
+                    if self.display.draw_byte(self.MEM.get_word((self.I + i) as usize).0, &x, &y) == true {
+                        self.V[0xF] = 1;
+                    }
+                }
+                self.display.update();
+            }
 
              // TODO: Handle unhandled op codes here
             _ => {
