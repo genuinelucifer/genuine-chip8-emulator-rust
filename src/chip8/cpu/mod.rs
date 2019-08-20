@@ -1,3 +1,7 @@
+extern crate rand;
+
+use rand::Rng;
+
 use super::memory;
 use super::timer;
 use super::display;
@@ -43,7 +47,6 @@ impl Chip8CPU {
             // exit
             std::process::exit(0);
         }
-        // TODO: Handle all other op codes here
         let opcode = (byte0 as u16)<<8 | (byte1 as u16);
         match opcode & 0xF000 {
             0x0000 => {
@@ -99,8 +102,108 @@ impl Chip8CPU {
                 // 7xkk - ADD Vx, byte
                 // Set Vx = Vx + kk.
                 self.V[((opcode & 0x0F00)>>8) as usize] += (opcode & 0x00FF) as u8
-            }
+            },
+            0x8000 => {
+                // 8XYZ
+                let x = ((opcode & 0x0F00) >> 8) as usize;
+                let y = ((opcode & 0x00F0) >> 4) as usize;
+                match opcode & 0x000F {
+                    0x0000 => {
+                        //8XY0 	Assign 	Vx=Vy 	Sets VX to the value of VY.
+                        self.V[x] = self.V[y];
+                    },
+                    0x0001 => {
+                        //8XY1 	BitOp 	Vx=Vx|Vy 	Sets VX to VX or VY. (Bitwise OR operation)
+                        self.V[x] |= self.V[y];
+                    },
+                    0x0002 => {
+                        //8XY2 	BitOp 	Vx=Vx&Vy 	Sets VX to VX and VY. (Bitwise AND operation)
+                        self.V[x] &= self.V[y];
+                    },
+                    0x0003 => {
+                        //8XY3 	BitOp 	Vx=Vx^Vy 	Sets VX to VX xor VY.
+                        self.V[x] ^= self.V[y];
+                    },
+                    0x0004 => {
+                        //8XY4 	Math 	Vx += Vy 	Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there isn't.
+                        let u16sum = (self.V[x] as u16) + (self.V[y] as u16);
+                        self.V[x] += self.V[y];
+                        // set the carry flag
+                        if u16sum > (self.V[x] as u16) {
+                            self.V[0x000F] = 1;
+                        }
+                        else {
+                            self.V[0x000F] = 0;
+                        }
+                    },
+                    0x0005 => {
+                        //8XY5  Math 	Vx -= Vy 	VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
+                        self.V[x] -= self.V[y];
+                        // A borrow when self.V[x] < self.V[y]
+                        if self.V[x] < self.V[y] {
+                            self.V[0x000F] = 0;
+                        }
+                        else {
+                            self.V[0x000F] = 1;
+                        }
+                    },
+                    0x0006 => {
+                        //8XY6 	BitOp 	Vx>>=1 	Stores the least significant bit of VX in VF and then shifts VX to the right by 1.
+                        self.V[x] >>= 1;
+                    },
+                    0x0007 => {
+                        //8XY7 	Math 	Vx=Vy-Vx 	Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
+                        self.V[x] = self.V[y] - self.V[x];
+                        // A borrow when self.V[y] < self.V[x]
+                        if self.V[y] < self.V[x] {
+                            self.V[0x000F] = 0;
+                        }
+                        else {
+                            self.V[0x000F] = 1;
+                        }
+                    },
+                    0x000E => {
+                        //8XYE 	BitOp 	Vx<<=1 	Stores the most significant bit of VX in VF and then shifts VX to the left by 1.
+                        self.V[x] <<= 1;
+                    },
+                    _ => {
+                        // do nothing
+                        // unsupported opcode
+                    }
+                }
+            },
+            0x9000 => {
+                if (opcode & 0x000F) == 0 {
+                    //9XY0 	Cond 	if(Vx!=Vy) 	Skips the next instruction if VX doesn't equal VY. (Usually the next instruction is a jump to skip a code block)
+                    let x = ((opcode & 0x0F00) >> 8) as usize;
+                    let y = ((opcode & 0x00F0) >> 4) as usize;
+                    if self.V[x] != self.V[y] {
+                        self.PC += 2;
+                    }
+                }
+                else {
+                        // do nothing
+                        // unsupported opcode
+                }
+            },
+            0xA000 => {
+                //ANNN 	MEM 	I = NNN 	Sets I to the address NNN.
+                self.I = opcode & 0x0FFF;
+            },
+            0xB000 => {
+                //BNNN 	Flow 	PC=V0+NNN 	Jumps to the address NNN plus V0.
+                self.PC = (self.V[0] as u16) + (opcode & 0x0FFF);
+            },
+            0xC000 => {
+                //CXNN 	Rand 	Vx=rand()&NN 	Sets VX to the result of a bitwise and operation on a random number (Typically: 0 to 255) and NN.
+                let x = ((opcode & 0x0F00) >> 8) as usize;
+                let NN = (opcode & 0x00FF) as u8;
+                let mut rng = rand::thread_rng();
+                let rand_u8: u8 = rng.gen();
+                self.V[x] = rand_u8 &  NN;
+            },
 
+             // TODO: Handle unhandled op codes here
             _ => {
                 // do nothing
                 // unsupported opcode
