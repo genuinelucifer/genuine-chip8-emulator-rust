@@ -41,7 +41,7 @@ impl Chip8CPU {
     pub fn exec_next_instruction(&mut self) {
         // read the instruction at PC and execute it
         let (byte0, byte1) = self.MEM.get_word(self.PC as usize);
-        println!("Bytes received: {}, {}", byte0, byte1);
+        println!("Bytes received: 0x{:x}, 0x{:x}", byte0, byte1);
         self.PC += 2;
         if byte0 == 0 && byte1 == 0 {
             // exit
