@@ -8,7 +8,7 @@ pub struct Chip8CPU {
     MEM: memory::Chip8Memory,   // Memory
     PC: u16,
     stack: [u16; 24],           // Stack with 48 bytes, 24 levels of nesting
-    SP: u8,                     // Current position of calls in stack
+    SP: usize,                     // Current position of calls in stack
     delay_timer: timer::Chip8Timer,
     sound_timer: timer::Chip8Timer,
     display: display::Chip8Display,
@@ -54,7 +54,7 @@ impl Chip8CPU {
                     },
                     0x00EE => {
                         //return from subroutine
-                        self.PC = self.stack[self.SP as usize];
+                        self.PC = self.stack[self.SP];
                         self.SP -= 1;
                     },
                     _ => {
@@ -69,7 +69,7 @@ impl Chip8CPU {
             0x2000 => {
                 // call subroutine
                 self.SP += 1;
-                self.stack[self.SP as usize] = self.PC;
+                self.stack[self.SP] = self.PC;
                 self.PC = opcode & 0x0FFF;
             },
             0x3000 => {
