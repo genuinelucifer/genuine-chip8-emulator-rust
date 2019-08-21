@@ -17,7 +17,15 @@ impl Chip8Memory {
         }
     }
 
-    pub fn get_word(&self, pos: usize) -> (u8, u8) {
-        (self.data[pos], self.data[pos+1])
+    pub fn get_word(&self, pos: usize) -> u16 {
+        (self.data[pos] as u16)<<8 | (self.data[pos+1] as u16)
+    }
+
+    pub fn set_byte(&mut self, pos: usize, byte: u8) {
+        self.data[pos] = byte;
+    }
+
+    pub fn get_byte(&self, pos: usize) -> u8 {
+        self.data[pos]
     }
 }
