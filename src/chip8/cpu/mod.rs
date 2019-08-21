@@ -47,7 +47,7 @@ impl Chip8CPU {
     pub fn exec_next_instruction(&mut self) {
         // read the instruction at PC and execute it
         let opcode = self.MEM.get_word(self.PC as usize);
-        //println!("Word received: 0x{:x}", opcode);
+        println!("Word received: 0x{:x}", opcode);
         self.PC += 2;
         self.handle_opcode(opcode);
         // TODO: Sound a beep if sound_timer is not zero
