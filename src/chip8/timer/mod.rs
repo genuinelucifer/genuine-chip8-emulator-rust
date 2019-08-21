@@ -23,13 +23,13 @@ impl Chip8Timer {
         let cur_time = cur_time();
         let mili_passed = cur_time - self.last_time;
         // Reduce the counter by 60 every second
-        let reduction = (60.0 * (mili_passed as f32 / 1000.00)) as u8;
+        let mut reduction = (60.0 * (mili_passed as f32 / 1000.00)) as u8;
         if reduction > 0 {
             self.last_time = cur_time;
-            self.value -= reduction;
-            if self.value < 0 {
-                self.value = 0;
+            if reduction > self.value {
+                reduction = self.value;
             }
+            self.value -= reduction;
         }
     }
 

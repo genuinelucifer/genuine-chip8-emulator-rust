@@ -44,8 +44,8 @@ impl Chip8CPU {
         // read the instruction at PC and execute it
         let opcode = self.MEM.get_word(self.PC as usize);
         println!("Word received: 0x{:x}", opcode);
-        self.handle_opcode(opcode);
         self.PC += 2;
+        self.handle_opcode(opcode);
         // TODO: Sound a beep if sound_timer is not zero
     }
 
@@ -219,7 +219,7 @@ impl Chip8CPU {
                 let column = self.V[y];
                 self.V[0xF] = 0;
                 for i in 0..n {
-                    if self.display.draw_byte(self.MEM.get_word((self.I + i) as usize).0, &x, &y) == true {
+                    if self.display.draw_byte(self.MEM.get_byte((self.I + i) as usize), &x, &y) == true {
                         self.V[0xF] = 1;
                     }
                 }
