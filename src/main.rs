@@ -23,7 +23,7 @@ fn start() -> Result<(), std::io::Error> {
                     Ok(line)  => {
                         // TODO:: add line>0 && line<rom_list.len()
                         println!("Ok {}", line);
-                        println!("{:?}",&roms_with_index[line].1.path().to_str());
+                        println!("{:?}",&roms_with_index[line - 1].1.path().to_str());
                         let rom_data = loader::load_roms(&roms_with_index[line-1].1.path().to_str());
                         match rom_data {
                             Ok(v) => {
