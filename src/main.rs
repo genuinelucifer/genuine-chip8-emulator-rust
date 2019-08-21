@@ -1,7 +1,10 @@
+extern crate piston_window;
+
 mod loader;
 mod chip8;
 
 use std::io::stdin;
+use piston_window::*;
 
 
 fn start() -> Result<(), std::io::Error> {
