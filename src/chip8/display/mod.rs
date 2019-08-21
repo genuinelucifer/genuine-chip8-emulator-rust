@@ -45,7 +45,6 @@ impl Chip8Display {
         for i in 0..8 {
             let _row= row%32 as usize;
             let _column = (column+i)%64 as usize;
-            let temp = self.pixels[_row][_column];
             if (sprite & (0x80 >> i)) != 0 {
                 if self.pixels[_row][_column] == true {
                     collision = true;
@@ -56,32 +55,41 @@ impl Chip8Display {
         collision
     }
 
-    pub fn update(&mut self) {
-        let mut flag = false;
-        while let Some(e) = self.window.next() {
-            if flag {
-                break;
-            }
-            if let Some(r) = e.render_args() {
-                for (x, row) in self.pixels.iter().enumerate() {
-                    for (y, col) in row.iter().enumerate() {
-                        if *col == true {
-                            self.window.draw_2d(&e, |c, g, _device| {
-                                rectangle([255.0, 255.0, 255.0, 1.0], // white
-                                          [(y*10) as f64, (x*10) as f64, 10.0, 10.0],
-                                          c.transform, g);
-                            });
-                        } else {
-                            self.window.draw_2d(&e, |c, g, _device| {
-                                rectangle([0.0, 0.0, 0.0, 1.0], // black
-                                          [(y*10) as f64, (x*10) as f64, 10.0, 10.0],
-                                          c.transform, g);
-
-                            });
-                        }
+    pub fn black_update(&mut self) {
+        if let Some(e) = self.window.next() {
+            for (x, row) in self.pixels.iter().enumerate() {
+                for (y, col) in row.iter().enumerate() {
+                    if *col == true {
+                        self.window.draw_2d(&e, |c, g, _device| {
+                            rectangle([0.0, 0.0, 0.0, 1.0], // black
+                                      [(y * 10) as f64, (x * 10) as f64, 10.0, 10.0],
+                                      c.transform, g);
+                        });
                     }
                 }
-                flag = true;
+            }
+        }
+    }
+
+    pub fn update(&mut self) {
+        if let Some(e) = self.window.next() {
+            for (x, row) in self.pixels.iter().enumerate() {
+                for (y, col) in row.iter().enumerate() {
+                    if *col == true {
+                        self.window.draw_2d(&e, |c, g, _device| {
+                            rectangle([255.0, 255.0, 255.0, 1.0], // white
+                                      [(y*10) as f64, (x*10) as f64, 10.0, 10.0],
+                                      c.transform, g);
+                        });
+                    } else {
+                        self.window.draw_2d(&e, |c, g, _device| {
+                            rectangle([0.0, 0.0, 0.0, 1.0], // black
+                                      [(y*10) as f64, (x*10) as f64, 10.0, 10.0],
+                                      c.transform, g);
+
+                        });
+                    }
+                }
             }
         }
     }
