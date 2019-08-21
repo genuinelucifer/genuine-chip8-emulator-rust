@@ -1,5 +1,6 @@
 extern crate device_query;
 extern crate rand;
+extern crate piston;
 
 use device_query::{DeviceQuery, DeviceState, Keycode};
 use rand::Rng;
@@ -7,6 +8,9 @@ use rand::Rng;
 use super::display;
 use super::memory;
 use super::timer;
+
+use piston::input::*;
+use piston::event_loop::*;
 
 pub struct Chip8CPU {
     V: [u8; 16],
@@ -215,17 +219,18 @@ impl Chip8CPU {
                 //Dxyn - DRW Vx, Vy, nibble
                 //Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
                 let n = opcode & 0x000F;
-                let row = self.V[x];
-                let column = self.V[y];
+                let row = self.V[x] as usize;
+                let column = self.V[y] as usize;
                 self.V[0xF] = 0;
                 for i in 0..n {
-                    if self.display.draw_byte(self.MEM.get_byte((self.I + i) as usize), &x, &y) == true {
+                    if self.display.draw_byte(self.MEM.get_byte((self.I + i) as usize), row, column) == true {
                         self.V[0xF] = 1;
                     }
                 }
                 self.display.update();
             },
             0xE000 => {
+                let mut events = Events::new(EventSettings::new().lazy(true));
                 let device_state = DeviceState::new();
                 let key_to_match = &keycode_map[(self.V[x] & 0x0F) as usize];
                 let keys: Vec<Keycode> = device_state.get_keys();
