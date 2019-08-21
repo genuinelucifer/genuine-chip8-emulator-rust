@@ -31,6 +31,15 @@ impl Chip8Display {
         collision
     }
 
+    pub fn print_pixel(&mut self) {
+        for (x, row) in self.pixels.iter_mut().enumerate() {
+            for (y, col) in row.iter_mut().enumerate() {
+                print!("{} ", *col);
+            }
+            println!();
+        }
+    }
+
     pub fn draw_byte(&mut self, sprite: u8, row: usize, column: usize) -> bool {
         let mut collision = false;
         for i in 0..8 {
