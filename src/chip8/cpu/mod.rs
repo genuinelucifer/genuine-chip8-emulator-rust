@@ -26,10 +26,30 @@ pub struct Chip8CPU {
 
 impl Chip8CPU {
     pub fn new() -> Chip8CPU {
+        let font_set = [0xF0, 0x90, 0x90, 0x90, 0xF0, //0
+                                0x20, 0x60, 0x20, 0x20, 0x70, //1
+                                0xF0, 0x10, 0xF0, 0x80, 0xF0, //2
+                                0xF0, 0x10, 0xF0, 0x10, 0xF0, //3
+                                0x90, 0x90, 0xF0, 0x10, 0x10, //4
+                                0xF0, 0x80, 0xF0, 0x10, 0xF0, //5
+                                0xF0, 0x80, 0xF0, 0x90, 0xF0, //6
+                                0xF0, 0x10, 0x20, 0x40, 0x40, //7
+                                0xF0, 0x90, 0xF0, 0x90, 0xF0, //8
+                                0xF0, 0x90, 0xF0, 0x10, 0xF0, //9
+                                0xF0, 0x90, 0xF0, 0x90, 0x90, //A
+                                0xE0, 0x90, 0xE0, 0x90, 0xE0, //B
+                                0xF0, 0x80, 0x80, 0x80, 0xF0, //C
+                                0xE0, 0x90, 0x90, 0x90, 0xE0, //D
+                                0xF0, 0x80, 0xF0, 0x80, 0xF0, //E
+                                0xF0, 0x80, 0xF0, 0x80, 0x80 ];
+        let mut memory = memory::Chip8Memory::new();
+        for i in 0..80 {
+            memory.set_byte(i as usize, font_set[i as usize]);
+        }
         Chip8CPU {
             V: [0; 16],
             I: 0,
-            MEM: memory::Chip8Memory::new(),
+            MEM: memory,
             PC: 0x200,
             stack: [0; 24],
             SP: 0,
@@ -74,8 +94,9 @@ impl Chip8CPU {
                     },
                     0xEE => {
                         //return from subroutine
-                        self.PC = self.stack[self.SP];
                         self.SP -= 1;
+                        self.PC = self.stack[self.SP];
+
                     },
                     _ => {
                         //do nothing
@@ -88,8 +109,9 @@ impl Chip8CPU {
             },
             0x2000 => {
                 // call subroutine
-                self.SP += 1;
+
                 self.stack[self.SP] = self.PC;
+                self.SP += 1;
                 self.PC = opcode & 0x0FFF;
             },
             0x3000 => {
@@ -114,11 +136,13 @@ impl Chip8CPU {
                 // 6xkk - LD Vx, byte
                 // Set Vx = kk.
                 self.V[x] = (opcode & 0x00FF) as u8;
+                println!("set v[x]: {} for x: {}", self.V[x], x);
             },
             0x7000 => {
                 // 7xkk - ADD Vx, byte
                 // Set Vx = Vx + kk.
-                self.V[x] += (opcode & 0x00FF) as u8
+                let u16sum = (self.V[x] as u16) + (opcode & 0x00FF as u16);
+                self.V[x] = (u16sum & 0x00FF) as u8
             },
             0x8000 => {
                 // 8XYZ
@@ -142,9 +166,10 @@ impl Chip8CPU {
                     0x0004 => {
                         //8XY4 	Math 	Vx += Vy 	Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there isn't.
                         let u16sum = (self.V[x] as u16) + (self.V[y] as u16);
-                        self.V[x] += self.V[y];
+                        //self.V[x] += self.V[y];
+                        self.V[x] = (u16sum & 0xFF) as u8;
                         // set the carry flag
-                        if u16sum > (self.V[x] as u16) {
+                        if self.V[y] > (0xFF - self.V[x]) {
                             self.V[0xF] = 1;
                         }
                         else {
@@ -153,7 +178,7 @@ impl Chip8CPU {
                     },
                     0x0005 => {
                         //8XY5  Math 	Vx -= Vy 	VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
-                        self.V[x] -= self.V[y];
+                        //self.V[x] -= self.V[y];
                         // A borrow when self.V[x] < self.V[y]
                         if self.V[x] < self.V[y] {
                             self.V[0xF] = 0;
@@ -161,9 +186,12 @@ impl Chip8CPU {
                         else {
                             self.V[0xF] = 1;
                         }
+                        let i16sub = self.V[x] as i16 - self.V[y] as i16;
+                        self.V[x] = (i16sub & 0xFF) as u8;
                     },
                     0x0006 => {
                         //8XY6 	BitOp 	Vx>>=1 	Stores the least significant bit of VX in VF and then shifts VX to the right by 1.
+                        self.V[0xF] = self.V[x] & 0x1;
                         self.V[x] >>= 1;
                     },
                     0x0007 => {
@@ -179,6 +207,7 @@ impl Chip8CPU {
                     },
                     0x000E => {
                         //8XYE 	BitOp 	Vx<<=1 	Stores the most significant bit of VX in VF and then shifts VX to the left by 1.
+                        self.V[0xF] = self.V[x] >> 7;
                         self.V[x] <<= 1;
                     },
                     _ => {
@@ -188,17 +217,17 @@ impl Chip8CPU {
                 }
             },
             0x9000 => {
-                if (opcode & 0x000F) == 0 {
+               // if (opcode & 0x000F) == 0 {
                     //9XY0 	Cond 	if(Vx!=Vy) 	Skips the next instruction if VX doesn't equal VY.
                     //(Usually the next instruction is a jump to skip a code block)
                     if self.V[x] != self.V[y] {
                         self.PC += 2;
                     }
-                }
-                else {
+               // }
+                //else {
                         // do nothing
                         // unsupported opcode
-                }
+                //}
             },
             0xA000 => {
                 //ANNN 	MEM 	I = NNN 	Sets I to the address NNN.
@@ -222,11 +251,14 @@ impl Chip8CPU {
                 let row = self.V[x] as usize;
                 let column = self.V[y] as usize;
                 self.V[0xF] = 0;
+                println!("row: {}, col: {}, n: {}", row, column, n);
                 for i in 0..n {
-                    if self.display.draw_byte(self.MEM.get_byte((self.I + i) as usize), row, column) == true {
+                    println!("sprite {}", self.MEM.get_byte((self.I + i) as usize));
+                    if self.display.draw_byte(self.MEM.get_byte((self.I + i) as usize), row+i as usize, column) == true {
                         self.V[0xF] = 1;
                     }
                 }
+                self.display.print_pixel();
                 self.display.update();
             },
             0xE000 => {
@@ -291,7 +323,8 @@ impl Chip8CPU {
                     0x29 => {
                         //FX29 	MEM 	I=sprite_addr[Vx] 	Sets I to the location of the sprite for the character in VX.
                         //Characters 0-F (in hexadecimal) are represented by a 4x5 font.
-                        //TODO: Store font in memory then point here
+                        println!("vx: {}", self.V[x]);
+                        self.I = (self.V[x]*(5)) as u16;
                     },
                     0x33 => {
                         //FX33 	BCD 	set_BCD(Vx);
