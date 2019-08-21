@@ -1,8 +1,6 @@
-extern crate device_query;
 extern crate rand;
 extern crate piston;
 
-use device_query::{DeviceQuery, DeviceState, Keycode};
 use rand::Rng;
 
 use super::display;
@@ -91,6 +89,7 @@ impl Chip8CPU {
                     0xE0 => {
                         //clear screen
                         self.display.disp_clear();
+                        self.display.update();
                     },
                     0xEE => {
                         //return from subroutine
@@ -136,13 +135,12 @@ impl Chip8CPU {
                 // 6xkk - LD Vx, byte
                 // Set Vx = kk.
                 self.V[x] = (opcode & 0x00FF) as u8;
-                println!("set v[x]: {} for x: {}", self.V[x], x);
             },
             0x7000 => {
                 // 7xkk - ADD Vx, byte
                 // Set Vx = Vx + kk.
-                let u16sum = (self.V[x] as u16) + (opcode & 0x00FF as u16);
-                self.V[x] = (u16sum & 0x00FF) as u8
+                let u16sum = ((self.V[x] as u16) + (opcode & 0x00FF as u16))%0x100;
+                self.V[x] = u16sum as u8
             },
             0x8000 => {
                 // 8XYZ
@@ -165,9 +163,9 @@ impl Chip8CPU {
                     },
                     0x0004 => {
                         //8XY4 	Math 	Vx += Vy 	Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there isn't.
-                        let u16sum = (self.V[x] as u16) + (self.V[y] as u16);
+                        let u16sum = ((self.V[x] as u16) + (self.V[y] as u16))%0x100;
                         //self.V[x] += self.V[y];
-                        self.V[x] = (u16sum & 0xFF) as u8;
+                        self.V[x] = u16sum as u8;
                         // set the carry flag
                         if self.V[y] > (0xFF - self.V[x]) {
                             self.V[0xF] = 1;
@@ -186,8 +184,8 @@ impl Chip8CPU {
                         else {
                             self.V[0xF] = 1;
                         }
-                        let i16sub = self.V[x] as i16 - self.V[y] as i16;
-                        self.V[x] = (i16sub & 0xFF) as u8;
+                        let i16sub = (self.V[x] as i16 - self.V[y] as i16+0x100)%0x100;
+                        self.V[x] = i16sub as u8;
                     },
                     0x0006 => {
                         //8XY6 	BitOp 	Vx>>=1 	Stores the least significant bit of VX in VF and then shifts VX to the right by 1.
@@ -196,7 +194,7 @@ impl Chip8CPU {
                     },
                     0x0007 => {
                         //8XY7 	Math 	Vx=Vy-Vx 	Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
-                        self.V[x] = self.V[y] - self.V[x];
+                        let diff:i16 = (self.V[y] as i16 - self.V[x] as i16 + 0x100)%0x100;
                         // A borrow when self.V[y] < self.V[x]
                         if self.V[y] < self.V[x] {
                             self.V[0xF] = 0;
@@ -204,6 +202,7 @@ impl Chip8CPU {
                         else {
                             self.V[0xF] = 1;
                         }
+                        self.V[x] = diff as u8;
                     },
                     0x000E => {
                         //8XYE 	BitOp 	Vx<<=1 	Stores the most significant bit of VX in VF and then shifts VX to the left by 1.
@@ -247,18 +246,19 @@ impl Chip8CPU {
             0xD000 => {
                 //Dxyn - DRW Vx, Vy, nibble
                 //Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
+                //self.display.black_update();
                 let n = opcode & 0x000F;
                 let row = self.V[x] as usize;
                 let column = self.V[y] as usize;
                 self.V[0xF] = 0;
-                println!("row: {}, col: {}, n: {}", row, column, n);
+                //println!("row: {}, col: {}, n: {}", row, column, n);
                 for i in 0..n {
-                    println!("sprite {}", self.MEM.get_byte((self.I + i) as usize));
-                    if self.display.draw_byte(self.MEM.get_byte((self.I + i) as usize), row+i as usize, column) == true {
+                    //println!("sprite {}", self.MEM.get_byte((self.I + i) as usize));
+                    if self.display.draw_byte(self.MEM.get_byte((self.I + i) as usize), column+i as usize, row) == true {
                         self.V[0xF] = 1;
                     }
                 }
-                self.display.print_pixel();
+                //self.display.print_pixel();
                 self.display.update();
             },
             0xE000 => {
