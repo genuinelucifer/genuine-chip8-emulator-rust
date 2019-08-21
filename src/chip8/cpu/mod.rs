@@ -47,7 +47,7 @@ impl Chip8CPU {
     pub fn exec_next_instruction(&mut self) {
         // read the instruction at PC and execute it
         let opcode = self.MEM.get_word(self.PC as usize);
-        println!("Word received: 0x{:x}", opcode);
+        //println!("Word received: 0x{:x}", opcode);
         self.PC += 2;
         self.handle_opcode(opcode);
         // TODO: Sound a beep if sound_timer is not zero
@@ -58,9 +58,9 @@ impl Chip8CPU {
         // general opcode 0x*XY*
         let x = ((opcode & 0x0F00) >> 8) as usize;
         let y = ((opcode & 0x00F0) >> 4) as usize;
-        let keycode_map = vec![Keycode::Key0, Keycode::Key1, Keycode::Key2, Keycode::Key3, Keycode::Key4,
-                               Keycode::Key5, Keycode::Key6, Keycode::Key7, Keycode::Key8, Keycode::Key9,
-                               Keycode::A, Keycode::B, Keycode::C, Keycode::D, Keycode::E, Keycode::F];
+        let keycode_map = vec![Key::NumPad0, Key::NumPad1, Key::NumPad2, Key::NumPad3, Key::NumPad4, Key::NumPad5,
+                               Key::NumPad6, Key::NumPad7, Key::NumPad8, Key::NumPad9,
+                               Key::A, Key::B, Key::C, Key::D, Key::E, Key::F];
         match opcode & 0xF000 {
             0x0000 => {
                 match opcode & 0xFF {
@@ -231,28 +231,26 @@ impl Chip8CPU {
             },
             0xE000 => {
                 let mut events = Events::new(EventSettings::new().lazy(true));
-                let device_state = DeviceState::new();
                 let key_to_match = &keycode_map[(self.V[x] & 0x0F) as usize];
-                let keys: Vec<Keycode> = device_state.get_keys();
                 match opcode & 0xFF {
                     0x9E => {
                         //EX9E 	KeyOp 	if(key()==Vx) 	Skips the next instruction if the key stored in VX is pressed.
-                        for key in keys.iter() {
-                            if *key == *key_to_match {
+                        let key = self.display.get_pressed_key();
+                        if key.is_some() {
+                            if key.unwrap() == *key_to_match {
                                 self.PC += 2;
                             }
                         }
+
                     },
                     0xA1 => {
                         //EXA1 	KeyOp 	if(key()!=Vx) 	Skips the next instruction if the key stored in VX isn't pressed.
-                        let mut add_to_pc = 2;
-                        for key in keys.iter() {
-                            if *key == *key_to_match {
-                                add_to_pc = 0;
-                                break;
+                        let key = self.display.get_pressed_key();
+                        if key.is_some() {
+                            if key.unwrap() != *key_to_match {
+                                self.PC += 2;
                             }
                         }
-                        self.PC += add_to_pc;
                     },
                     _ => {
                         // do nothing
