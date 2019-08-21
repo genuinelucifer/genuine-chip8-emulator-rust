@@ -11,9 +11,7 @@ impl Chip8Display {
     pub fn new() -> Chip8Display {
         Chip8Display {
             pixels: [[false; 64];32],
-            window: WindowSettings::new("Chip8!", [640, 320])
-
-        .exit_on_esc(true).build().unwrap()
+            window: WindowSettings::new("Chip8!", [640, 320]).exit_on_esc(true).build().unwrap(),
         }
     }
 
@@ -55,41 +53,27 @@ impl Chip8Display {
         collision
     }
 
-    pub fn black_update(&mut self) {
-        if let Some(e) = self.window.next() {
-            for (x, row) in self.pixels.iter().enumerate() {
-                for (y, col) in row.iter().enumerate() {
-                    if *col == true {
-                        self.window.draw_2d(&e, |c, g, _device| {
-                            rectangle([0.0, 0.0, 0.0, 1.0], // black
-                                      [(y * 10) as f64, (x * 10) as f64, 10.0, 10.0],
-                                      c.transform, g);
-                        });
-                    }
-                }
-            }
-        }
-    }
-
     pub fn update(&mut self) {
+        let mut flag = false;
         if let Some(e) = self.window.next() {
-            for (x, row) in self.pixels.iter().enumerate() {
-                for (y, col) in row.iter().enumerate() {
-                    if *col == true {
-                        self.window.draw_2d(&e, |c, g, _device| {
-                            rectangle([255.0, 255.0, 255.0, 1.0], // white
-                                      [(y*10) as f64, (x*10) as f64, 10.0, 10.0],
-                                      c.transform, g);
-                        });
-                    } else {
-                        self.window.draw_2d(&e, |c, g, _device| {
-                            rectangle([0.0, 0.0, 0.0, 1.0], // black
-                                      [(y*10) as f64, (x*10) as f64, 10.0, 10.0],
-                                      c.transform, g);
-
-                        });
+            if flag {
+           //     break;
+            }
+            if let Some(r) = e.render_args() {
+                let pixel = &self.pixels;
+                self.window.draw_2d(&e, |c, g, _device| {
+                    clear([0.0, 0.0, 0.0, 1.0], g);
+                    for (x, row) in pixel.iter().enumerate() {
+                        for (y, col) in row.iter().enumerate() {
+                            if *col == true {
+                                rectangle([255.0, 255.0, 255.0, 1.0], // white
+                                          [(y * 10) as f64, (x * 10) as f64, 10.0, 10.0],
+                                          c.transform, g);
+                            }
+                        }
                     }
-                }
+                });
+                flag = true;
             }
         }
     }

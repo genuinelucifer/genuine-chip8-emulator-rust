@@ -246,7 +246,6 @@ impl Chip8CPU {
             0xD000 => {
                 //Dxyn - DRW Vx, Vy, nibble
                 //Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
-                //self.display.black_update();
                 let n = opcode & 0x000F;
                 let row = self.V[x] as usize;
                 let column = self.V[y] as usize;
