@@ -9,11 +9,7 @@ use super::display;
 use super::memory;
 use super::timer;
 
-use std::collections::HashSet;
-
-use piston::input::*;
-use piston::event_loop::*;
-
+#[allow(non_snake_case)]
 pub struct Chip8CPU {
     V: [u8; 16],
     I: u16,
@@ -73,7 +69,7 @@ impl Chip8CPU {
     pub fn exec_next_instruction(&mut self) {
         // read the instruction at PC and execute it
         let opcode = self.MEM.get_word(self.PC as usize);
-        //println!("Word received: 0x{:x}", opcode);
+        println!("Word received: 0x{:x}", opcode);
         self.PC += 2;
         self.handle_opcode(opcode);
         // TODO: Sound a beep if sound_timer is not zero
@@ -84,9 +80,6 @@ impl Chip8CPU {
         // general opcode 0x*XY*
         let x = ((opcode & 0x0F00) >> 8) as usize;
         let y = ((opcode & 0x00F0) >> 4) as usize;
-        let keycode_map = vec![Key::NumPad0, Key::NumPad1, Key::NumPad2, Key::NumPad3, Key::NumPad4, Key::NumPad5,
-                               Key::NumPad6, Key::NumPad7, Key::NumPad8, Key::NumPad9,
-                               Key::A, Key::B, Key::C, Key::D, Key::E, Key::F];
         match opcode & 0xF000 {
             0x0000 => {
                 match opcode & 0xFF {
@@ -97,9 +90,7 @@ impl Chip8CPU {
                     0xE0 => {
                         //clear screen
                         self.display.disp_clear();
-                        //self.display.update();
                         self.need_update = true;
-                        println!("clear screen");
                     },
                     0xEE => {
                         //return from subroutine
@@ -226,17 +217,11 @@ impl Chip8CPU {
                 }
             },
             0x9000 => {
-               // if (opcode & 0x000F) == 0 {
-                    //9XY0 	Cond 	if(Vx!=Vy) 	Skips the next instruction if VX doesn't equal VY.
-                    //(Usually the next instruction is a jump to skip a code block)
-                    if self.V[x] != self.V[y] {
-                        self.PC += 2;
-                    }
-               // }
-                //else {
-                        // do nothing
-                        // unsupported opcode
-                //}
+                //9XY0 	Cond 	if(Vx!=Vy) 	Skips the next instruction if VX doesn't equal VY.
+                //(Usually the next instruction is a jump to skip a code block)
+                if self.V[x] != self.V[y] {
+                    self.PC += 2;
+                }
             },
             0xA000 => {
                 //ANNN 	MEM 	I = NNN 	Sets I to the address NNN.
@@ -248,6 +233,7 @@ impl Chip8CPU {
             },
             0xC000 => {
                 //CXNN 	Rand 	Vx=rand()&NN 	Sets VX to the result of a bitwise and operation on a random number (Typically: 0 to 255) and NN.
+                #[allow(non_snake_case)]
                 let NN = (opcode & 0x00FF) as u8;
                 let mut rng = rand::thread_rng();
                 let rand_u8: u8 = rng.gen();
@@ -260,20 +246,13 @@ impl Chip8CPU {
                 let row = self.V[y] as usize;
                 let column = self.V[x] as usize;
                 self.V[0xF] = 0;
-                //println!("row: {}, col: {}, n: {}", row, column, n);
                 for i in 0..n {
-                    //println!("sprite {}", self.MEM.get_byte((self.I + i) as usize));
                     if self.display.draw_byte(self.MEM.get_byte((self.I + i) as usize), row+i as usize, column) == true {
                         self.V[0xF] = 1;
                     }
                 }
-                self.need_update = true;
-                //self.display.print_pixel();
-                //self.display.update();
             },
             0xE000 => {
-                let mut events = Events::new(EventSettings::new().lazy(true));
-                let key_to_match = &keycode_map[(self.V[x] & 0x0F) as usize];
                 let key = (self.V[x] & 0x0F) as usize;
                 match opcode & 0xFF {
                     0x9E => {
@@ -281,7 +260,6 @@ impl Chip8CPU {
                         if self.keys[key] {
                             self.PC += 2;
                         }
-
                     },
                     0xA1 => {
                         //EXA1 	KeyOp 	if(key()!=Vx) 	Skips the next instruction if the key stored in VX isn't pressed.
@@ -304,10 +282,17 @@ impl Chip8CPU {
                     0x0A => {
                         //FX0A 	KeyOp 	Vx = get_key() 	A key press is awaited, and then stored in VX.
                         //(Blocking Operation. All instruction halted until next key event)
-                        //TODO: get from the window of display
                         let mut i: usize = 0;
-                        while !self.keys[i] {
-                            i = (i+1)%0x10;
+                        let mut flag = false;
+                        while  i < 0x10 {
+                            if self.keys[i] {
+                                flag = true;
+                                break;
+                            }
+                            i = i+1;
+                        }
+                        if !flag {
+                            self.PC -= 2;
                         }
                     },
                     0x15 => {
@@ -332,7 +317,6 @@ impl Chip8CPU {
                     0x29 => {
                         //FX29 	MEM 	I=sprite_addr[Vx] 	Sets I to the location of the sprite for the character in VX.
                         //Characters 0-F (in hexadecimal) are represented by a 4x5 font.
-                        println!("vx: {}", self.V[x]);
                         self.I = (self.V[x]*(5)) as u16;
                     },
                     0x33 => {
@@ -385,10 +369,8 @@ impl Chip8CPU {
     }
 
     pub fn update_display(&mut self, window: &mut PistonWindow, e: &Event) {
-        //if self.need_update {
-            self.display.update(window, e);
-            self.need_update = false;
-        //}
+        self.display.update(window, e);
+        self.need_update = false;
     }
 
     pub fn set_key(&mut self, key: usize) {

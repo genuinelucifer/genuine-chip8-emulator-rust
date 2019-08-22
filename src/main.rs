@@ -39,52 +39,48 @@ fn start() -> Result<(), std::io::Error> {
 
                                 while let Some(e) = events.next(&mut window) {
                                     if let Some(Button::Keyboard(key)) = e.press_args() {
-                                        println!("{:?}",key);
                                         match key {
-                                            Key::NumPad0 => chip8_cpu.set_key(0x0),
-                                            Key::NumPad1 => chip8_cpu.set_key(0x1),
-                                            Key::NumPad2 => chip8_cpu.set_key(0x2),
-                                            Key::NumPad3 => chip8_cpu.set_key(0x3),
-                                            Key::NumPad4 => chip8_cpu.set_key(0x4),
-                                            Key::NumPad5 => chip8_cpu.set_key(0x5),
-                                            Key::NumPad6 => chip8_cpu.set_key(0x6),
-                                            Key::NumPad7 => chip8_cpu.set_key(0x7),
-                                            Key::NumPad8 => chip8_cpu.set_key(0x8),
-                                            Key::NumPad9 => chip8_cpu.set_key(0x9),
-                                            Key::A => chip8_cpu.set_key(0xA),
-                                            Key::B => chip8_cpu.set_key(0xB),
-                                            Key::C => chip8_cpu.set_key(0xC),
-                                            Key::D => chip8_cpu.set_key(0xD),
-                                            Key::E => chip8_cpu.set_key(0xE),
-                                            Key::F => chip8_cpu.set_key(0xF),
+                                            Key::X => chip8_cpu.set_key(0x0),
+                                            Key::D1 => chip8_cpu.set_key(0x1),
+                                            Key::D2 => chip8_cpu.set_key(0x2),
+                                            Key::D3 => chip8_cpu.set_key(0x3),
+                                            Key::Q => chip8_cpu.set_key(0x4),
+                                            Key::W => chip8_cpu.set_key(0x5),
+                                            Key::E => chip8_cpu.set_key(0x6),
+                                            Key::A => chip8_cpu.set_key(0x7),
+                                            Key::S => chip8_cpu.set_key(0x8),
+                                            Key::D => chip8_cpu.set_key(0x9),
+                                            Key::Z => chip8_cpu.set_key(0xA),
+                                            Key::C => chip8_cpu.set_key(0xB),
+                                            Key::D4 => chip8_cpu.set_key(0xC),
+                                            Key::R => chip8_cpu.set_key(0xD),
+                                            Key::F => chip8_cpu.set_key(0xE),
+                                            Key::V => chip8_cpu.set_key(0xF),
                                             _ => {}
                                         }
                                     }
-                                    //if let Some(r) = e.render_args() {
-                                        chip8_cpu.update_display(&mut window, &e);
-                                    //}
 
-                                    //if let Some(u) = e.update_args() {
-                                        chip8_cpu.exec_next_instruction();
-                                    //}
+                                    chip8_cpu.update_display(&mut window, &e);
+                                    chip8_cpu.exec_next_instruction();
+
                                     if let Some(Button::Keyboard(key)) = e.release_args() {
                                         match key {
-                                            Key::NumPad0 => chip8_cpu.unset_key(0x0),
-                                            Key::NumPad1 => chip8_cpu.unset_key(0x1),
-                                            Key::NumPad2 => chip8_cpu.unset_key(0x2),
-                                            Key::NumPad3 => chip8_cpu.unset_key(0x3),
-                                            Key::NumPad4 => chip8_cpu.unset_key(0x4),
-                                            Key::NumPad5 => chip8_cpu.unset_key(0x5),
-                                            Key::NumPad6 => chip8_cpu.unset_key(0x6),
-                                            Key::NumPad7 => chip8_cpu.unset_key(0x7),
-                                            Key::NumPad8 => chip8_cpu.unset_key(0x8),
-                                            Key::NumPad9 => chip8_cpu.unset_key(0x9),
-                                            Key::A => chip8_cpu.unset_key(0xA),
-                                            Key::B => chip8_cpu.unset_key(0xB),
-                                            Key::C => chip8_cpu.unset_key(0xC),
-                                            Key::D => chip8_cpu.unset_key(0xD),
-                                            Key::E => chip8_cpu.unset_key(0xE),
-                                            Key::F => chip8_cpu.unset_key(0xF),
+                                            Key::X => chip8_cpu.unset_key(0x0),
+                                            Key::D1 => chip8_cpu.unset_key(0x1),
+                                            Key::D2 => chip8_cpu.unset_key(0x2),
+                                            Key::D3 => chip8_cpu.unset_key(0x3),
+                                            Key::Q => chip8_cpu.unset_key(0x4),
+                                            Key::W => chip8_cpu.unset_key(0x5),
+                                            Key::E => chip8_cpu.unset_key(0x6),
+                                            Key::A => chip8_cpu.unset_key(0x7),
+                                            Key::S => chip8_cpu.unset_key(0x8),
+                                            Key::D => chip8_cpu.unset_key(0x9),
+                                            Key::Z => chip8_cpu.unset_key(0xA),
+                                            Key::C => chip8_cpu.unset_key(0xB),
+                                            Key::D4 => chip8_cpu.unset_key(0xC),
+                                            Key::R => chip8_cpu.unset_key(0xD),
+                                            Key::F => chip8_cpu.unset_key(0xE),
+                                            Key::V => chip8_cpu.unset_key(0xF),
                                             _ => {}
                                         }
                                     }
@@ -94,7 +90,7 @@ fn start() -> Result<(), std::io::Error> {
 //                                    chip8_cpu.exec_next_instruction();
 //                                }
                             },
-                            Err(e) => {
+                            Err(_e) => {
                                 println!("Error occurred while loading rom!");
                             }
                         }
