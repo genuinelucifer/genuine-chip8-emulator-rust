@@ -1,11 +1,15 @@
 extern crate rand;
 extern crate piston;
+extern crate piston_window;
+use piston_window::*;
 
 use rand::Rng;
 
 use super::display;
 use super::memory;
 use super::timer;
+
+use std::collections::HashSet;
 
 use piston::input::*;
 use piston::event_loop::*;
@@ -20,6 +24,8 @@ pub struct Chip8CPU {
     delay_timer: timer::Chip8Timer,
     sound_timer: timer::Chip8Timer,
     display: display::Chip8Display,
+    need_update: bool,
+    keys:[bool; 16]
 }
 
 impl Chip8CPU {
@@ -53,7 +59,9 @@ impl Chip8CPU {
             SP: 0,
             delay_timer: timer::Chip8Timer::new(),
             sound_timer: timer::Chip8Timer::new(),
-            display: display::Chip8Display::new()
+            display: display::Chip8Display::new(),
+            need_update: false,
+            keys: [false; 16]
         }
     }
 
@@ -65,7 +73,7 @@ impl Chip8CPU {
     pub fn exec_next_instruction(&mut self) {
         // read the instruction at PC and execute it
         let opcode = self.MEM.get_word(self.PC as usize);
-        println!("Word received: 0x{:x}", opcode);
+        //println!("Word received: 0x{:x}", opcode);
         self.PC += 2;
         self.handle_opcode(opcode);
         // TODO: Sound a beep if sound_timer is not zero
@@ -89,7 +97,9 @@ impl Chip8CPU {
                     0xE0 => {
                         //clear screen
                         self.display.disp_clear();
-                        self.display.update();
+                        //self.display.update();
+                        self.need_update = true;
+                        println!("clear screen");
                     },
                     0xEE => {
                         //return from subroutine
@@ -247,40 +257,36 @@ impl Chip8CPU {
                 //Dxyn - DRW Vx, Vy, nibble
                 //Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
                 let n = opcode & 0x000F;
-                let row = self.V[x] as usize;
-                let column = self.V[y] as usize;
+                let row = self.V[y] as usize;
+                let column = self.V[x] as usize;
                 self.V[0xF] = 0;
                 //println!("row: {}, col: {}, n: {}", row, column, n);
                 for i in 0..n {
                     //println!("sprite {}", self.MEM.get_byte((self.I + i) as usize));
-                    if self.display.draw_byte(self.MEM.get_byte((self.I + i) as usize), column+i as usize, row) == true {
+                    if self.display.draw_byte(self.MEM.get_byte((self.I + i) as usize), row+i as usize, column) == true {
                         self.V[0xF] = 1;
                     }
                 }
+                self.need_update = true;
                 //self.display.print_pixel();
-                self.display.update();
+                //self.display.update();
             },
             0xE000 => {
                 let mut events = Events::new(EventSettings::new().lazy(true));
                 let key_to_match = &keycode_map[(self.V[x] & 0x0F) as usize];
+                let key = (self.V[x] & 0x0F) as usize;
                 match opcode & 0xFF {
                     0x9E => {
                         //EX9E 	KeyOp 	if(key()==Vx) 	Skips the next instruction if the key stored in VX is pressed.
-                        let key = self.display.get_pressed_key();
-                        if key.is_some() {
-                            if key.unwrap() == *key_to_match {
-                                self.PC += 2;
-                            }
+                        if self.keys[key] {
+                            self.PC += 2;
                         }
 
                     },
                     0xA1 => {
                         //EXA1 	KeyOp 	if(key()!=Vx) 	Skips the next instruction if the key stored in VX isn't pressed.
-                        let key = self.display.get_pressed_key();
-                        if key.is_some() {
-                            if key.unwrap() != *key_to_match {
-                                self.PC += 2;
-                            }
+                        if !self.keys[key] {
+                            self.PC += 2;
                         }
                     },
                     _ => {
@@ -299,6 +305,10 @@ impl Chip8CPU {
                         //FX0A 	KeyOp 	Vx = get_key() 	A key press is awaited, and then stored in VX.
                         //(Blocking Operation. All instruction halted until next key event)
                         //TODO: get from the window of display
+                        let mut i: usize = 0;
+                        while !self.keys[i] {
+                            i = (i+1)%0x10;
+                        }
                     },
                     0x15 => {
                         //FX15 	Timer 	delay_timer(Vx) 	Sets the delay timer to VX.
@@ -372,5 +382,20 @@ impl Chip8CPU {
 
             }
         }
+    }
+
+    pub fn update_display(&mut self, window: &mut PistonWindow, e: &Event) {
+        //if self.need_update {
+            self.display.update(window, e);
+            self.need_update = false;
+        //}
+    }
+
+    pub fn set_key(&mut self, key: usize) {
+        self.keys[key] = true;
+    }
+
+    pub fn unset_key(&mut self, key: usize) {
+        self.keys[key] = false;
     }
 }
