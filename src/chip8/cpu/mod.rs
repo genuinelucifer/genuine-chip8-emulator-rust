@@ -61,6 +61,10 @@ impl Chip8CPU {
         }
     }
 
+    pub fn clear_display(&mut self) {
+        self.display.disp_clear();
+    }
+
     pub fn load_program(&mut self, program: &Vec<u8>) {
         self.MEM.load_memory(program, 0x200);
         self.PC = 0x200;
